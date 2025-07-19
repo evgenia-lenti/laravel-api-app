@@ -1,11 +1,11 @@
 <?php
 
-namespace Tests\Feature;
+namespace Tests\Feature\V1;
 
 use App\Models\ExchangeRate;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
-use App\Models\User;
 
 class ExchangeRateApiTest extends TestCase
 {
@@ -18,7 +18,10 @@ class ExchangeRateApiTest extends TestCase
         parent::setUp();
 
         //creates and authenticates a user for using in all methods in this class
-        $this->user = User::factory()->create();
+        $this->user = User::factory()->state([
+            'email' => 'some@email.com',
+        ])->make();
+
         $this->actingAs($this->user);
     }
 
@@ -57,7 +60,7 @@ class ExchangeRateApiTest extends TestCase
         //asserts that status = 200, that there is 1 result and that this 1 result has currency_to = USD
         $response->assertStatus(200);
         $this->assertCount(1, $response->json('data'));
-        $this->assertEquals('USD', $response->json('data.0.currency_to'));
+        $this->assertEquals('USD', $response->json('data.0.currencyTo'));
     }
 
     public function testFiltersExchangeRatesByCurrencyFrom()
@@ -74,7 +77,7 @@ class ExchangeRateApiTest extends TestCase
         //asserts that status = 200, that there is 1 result and that this 1 result has currency_from = EUR
         $response->assertStatus(200);
         $this->assertCount(1, $response->json('data'));
-        $this->assertEquals('EUR', $response->json('data.0.currency_from'));
+        $this->assertEquals('EUR', $response->json('data.0.currencyFrom'));
     }
 
     public function testFiltersExchangeRatesByRate()
@@ -91,7 +94,7 @@ class ExchangeRateApiTest extends TestCase
         //asserts that status = 200, that there is 1 result and that this 1 result has rate = 1.25781803
         $response->assertStatus(200);
         $this->assertCount(1, $response->json('data'));
-        $this->assertEquals('1.25781803', $response->json('data.0.rate'));
+        $this->assertEquals('1.25781803', $response->json('data.0.exchangeRate'));
     }
 
     public function testFiltersExchangeRatesByRetrievedAt()
@@ -108,7 +111,7 @@ class ExchangeRateApiTest extends TestCase
         //asserts that status = 200, that there is 1 result and that this 1 result has retrieved_at = 2025-07-18 14:31:49
         $response->assertStatus(200);
         $this->assertCount(1, $response->json('data'));
-        $this->assertEquals('2025-07-18 14:31:49', $response->json('data.0.retrieved_at'));
+        $this->assertEquals('2025-07-18 14:31:49', $response->json('data.0.retrievedAt'));
     }
 
     public function testShowsSpecificExchangeRate()
@@ -121,14 +124,28 @@ class ExchangeRateApiTest extends TestCase
         //makes a request at /api/v1/exchange-rates/{exchangeRate} as the authenticated user
         $response = $this->getJson('/api/v1/exchange-rates/' . $exchangeRate->id);
 
-        //asserts that an exchange rate is returned with the following fields
+        //creates base assertions on the fields that should always be returned
+        $baseAssertions = [
+            'id' => $exchangeRate->id,
+            'currencyFrom' => $exchangeRate->currency_from,
+            'currencyTo' => $exchangeRate->currency_to,
+            'exchangeRate' => $exchangeRate->rate,
+            'retrievedAt' => $exchangeRate->retrieved_at
+        ];
+
+        //checks if the current route is 'exchange-rates.show'
+        $routeName = app('router')->currentRouteName();
+
+        if ($routeName === 'exchange-rates.show') {
+            //adds the timestamp fields to assertions if we are on the show route
+            $baseAssertions['createdAt'] = $exchangeRate->created_at->toJSON();
+            $baseAssertions['updatedAt'] = $exchangeRate->updated_at->toJSON();
+        }
+
+        //asserts the response
         $response->assertStatus(200)
             ->assertJson([
-                'id' => $exchangeRate->id,
-                'currency_from' => $exchangeRate->currency_from,
-                'currency_to' => $exchangeRate->currency_to,
-                'rate' => $exchangeRate->rate,
-                'retrieved_at' => $exchangeRate->retrieved_at
+                'data' => $baseAssertions
             ]);
     }
 }

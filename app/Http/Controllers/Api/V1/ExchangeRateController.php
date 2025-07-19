@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\ExchangeRateFilterRequest;
-use App\Http\Resources\ExchangeRateCollection;
-use App\Http\Resources\ExchangeRateResource;
+use App\Http\Requests\V1\ExchangeRateFilterRequest;
+use App\Http\Resources\V1\ExchangeRateCollection;
+use App\Http\Resources\V1\ExchangeRateResource;
 use App\Models\ExchangeRate;
 use Throwable;
 
@@ -25,6 +25,6 @@ class ExchangeRateController extends Controller
 
     public function show(ExchangeRate $exchangeRate)
     {
-        return response()->json(new ExchangeRateResource($exchangeRate));
+        return new ExchangeRateResource($exchangeRate);
     }
 }

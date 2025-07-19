@@ -16,7 +16,7 @@ class ExchangeRateFactory extends Factory
             'currency_from' => 'EUR',
             'currency_to' => $this->faker->currencyCode(),
             'rate' => $this->faker->randomFloat(8, 0.5, 2.0),
-            'retrieved_at' => Carbon::now(),
+            'retrieved_at' => Carbon::now()->toDateTimeString(),
             'created_at' => Carbon::now(),
             'updated_at' => Carbon::now(),
         ];
