@@ -1,61 +1,226 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Laravel API App - Exchange Rate Service
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+This project is a Laravel-based application that fetches and stores exchange rates from the European Central Bank (ECB). It provides an API to access these exchange rates.
 
-## About Laravel
+## Project Setup
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### Prerequisites
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- PHP 8.2 or higher
+- Composer
+- Laravel 12.x
+- Laragon or similar local development environment
+- SimpleXML PHP extension
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Installation Steps
 
-## Learning Laravel
+1. **Clone the repository**
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+   ```bash
+   git clone https://github.com/evgenia-lenti/laravel-api-app.git
+   cd laravel-api-app
+   ```
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+2. **Install dependencies**
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+   ```bash
+   composer install
+   ```
 
-## Laravel Sponsors
+3. **Environment setup**
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
 
-### Premium Partners
+4. **Database setup**
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+   The project is configured to use SQLite by default. If you want to use another database:
+   
+   - Update the `.env` file with your database credentials
+   - Uncomment and modify the database configuration in `.env`
 
-## Contributing
+   ```
+   DB_CONNECTION=mysql
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_DATABASE=database_name
+   DB_USERNAME=root
+   DB_PASSWORD=
+   ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+5. **Run migrations**
 
-## Code of Conduct
+   ```bash
+   php artisan migrate
+   ```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+6. **Seed the database**
 
-## Security Vulnerabilities
+   Run the database seeders to create a test user with an API token:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+   ```bash
+   php artisan db:seed
+   ```
 
-## License
+   This command will:
+   - Create a test user with email `some@email.com` and password `password`
+   - Generate an API token for this user
+   - Display the token in the console output
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+   Make note of the token displayed in the console, as you'll need it to authenticate API requests.
+   
+   Example token output:
+   ```
+   Test user token: 1|laravel_sanctum_hashed_token_example
+   ```
+
+7. **Fetch exchange rates**
+
+   To fetch exchange rates from the European Central Bank, run:
+
+   ```bash
+   php artisan exchange-rates:fetch
+   ```
+
+   This command will fetch the latest exchange rates and store them in your database. You can run this command manually whenever you need to fetch and store the exchange rates.
+
+
+## Project Structure
+
+### Key Components
+
+- **ExchangeRateDTO**: Data Transfer Object for exchange rates
+- **ExchangeRateService**: Service for fetching and parsing exchange rates from ECB
+- **ExchangeRateController**: API controller for exchange rates
+- **FetchExchangeRatesCommand**: Artisan command to fetch exchange rates
+
+### API Endpoints
+
+- `GET /api/v1/exchange-rates`: List all exchange rates (requires authentication)
+- `GET /api/v1/exchange-rates/{exchangeRate}`: Get a specific exchange rate (requires authentication)
+
+### Filtering and Sorting
+
+The Exchange Rate API supports powerful filtering and sorting capabilities. To use these features, you must format your query parameters using the bracket syntax:
+
+```
+filter[parameterName]=value
+```
+
+#### Available Filters
+
+- `filter[currencyFrom]`: Filter by source currency (e.g., EUR)
+- `filter[currencyTo]`: Filter by target currency (e.g., USD, GBP)
+- `filter[exchangeRate]`: Filter by exchange rate value
+- `filter[retrievedAt]`: Filter by retrieval date (supports partial matching)
+
+#### Sorting
+
+To sort results, use the `filter[sort]` parameter:
+
+- Ascending order: `filter[sort]=fieldName`
+- Descending order: `filter[sort]=-fieldName` (note the minus sign prefix)
+
+Available sort fields: `currencyFrom`, `currencyTo`, `exchangeRate`, `retrievedAt`
+
+#### Combining Multiple Filters
+
+You can combine multiple filters in a single request:
+
+```
+/api/v1/exchange-rates?filter[currencyFrom]=EUR&filter[currencyTo]=USD,GBP&filter[sort]=-retrievedAt
+```
+
+This example:
+1. Filters for exchange rates from EUR
+2. Filters for exchange rates to either USD or GBP
+3. Sorts results by retrieval date in descending order (newest first)
+
+### Authentication
+
+The API endpoints are protected with Laravel Sanctum. To access them:
+
+1. Run the database seeder to generate a test user and token as described in the installation steps.
+
+2. Include the token in your API requests using the Authorization header:
+   ```
+   Authorization: Bearer YOUR_TOKEN_HERE
+   ```
+
+3. If you need to generate a new token, you can use Laravel Tinker:
+   ```bash
+   php artisan tinker
+   ```
+   
+   Then execute:
+   ```php
+   $user = \App\Models\User::where('email', 'some@email.com')->first();
+   $user->tokens()->delete(); // Delete existing tokens
+   $user->createToken('NewToken')->plainTextToken;
+   ```
+
+## Fetching Exchange Rates
+
+The application includes a command to fetch exchange rates from the European Central Bank:
+
+```bash
+php artisan exchange-rates:fetch
+```
+
+This command:
+- Connects to the ECB's XML feed
+- Parses the exchange rate data
+- Stores the rates in your database
+
+You can run this command manually whenever you need to fetch and store the exchange rates in your application.
+
+## API Documentation
+
+The API is documented using [Scribe](https://scribe.knuckles.wtf/laravel/), which provides interactive documentation for all endpoints.
+
+### Accessing the Documentation
+
+After setting up the project, you can access the API documentation at:
+
+```
+http://localhost:8000/docs
+```
+
+The documentation includes:
+
+- Detailed information about all available endpoints
+- Request parameters and their validation rules
+- Example requests and responses
+- Authentication instructions
+- A Postman collection that you can import to test the API
+
+### Generating Updated Documentation
+
+If you make changes to the API, you can regenerate the documentation with:
+
+```bash
+php artisan scribe:generate
+```
+
+## Testing
+
+Run the test suite to ensure everything is working correctly:
+
+```bash
+php artisan test
+```
+
+The project includes several test classes:
+- `ExchangeRateApiTest`: Tests the API endpoints
+- `FetchExchangeRatesCommandTest`: Tests the Artisan command
+- `ExchangeRateServiceTest`: Tests the service layer
+
+## Troubleshooting
+
+- **API Authentication Issues**: Ensure Sanctum is properly configured
+- **Exchange Rate Fetch Failures**: Check network connectivity to ECB
+- **Database Connection Issues**: Verify database credentials in `.env`
+- **API Documentation Issues**: If the documentation is not displaying correctly, try regenerating it with `php artisan scribe:generate`
+

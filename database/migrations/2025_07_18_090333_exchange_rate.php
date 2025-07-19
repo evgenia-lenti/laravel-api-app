@@ -11,7 +11,7 @@ return new class extends Migration {
             $table->id();
             $table->string('currency_from')->default('EUR');
             $table->string('currency_to')->index();
-            $table->decimal('rate', 16, 8);
+            $table->float('rate');
             $table->dateTime('retrieved_at');
             $table->timestamps();
         });

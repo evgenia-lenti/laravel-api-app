@@ -3,7 +3,6 @@
 namespace App\Http\Requests\V1;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class ExchangeRateFilterRequest extends FormRequest
 {
@@ -23,23 +22,46 @@ class ExchangeRateFilterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'currency_to' => ['sometimes', 'string', 'size:3'],
-            'currency_from' => ['sometimes', 'string', 'size:3'],
-            'rate' => ['sometimes', 'numeric', 'min:0'],
-            'retrieved_at' => ['sometimes', Rule::date()->format('Y-m-d H:i:s')],
+            'filter' => ['sometimes', 'array'],
+            'filter.currencyTo' => ['sometimes'],
+            'filter.currencyTo.*' => ['string', 'size:3'],
+            'filter.currencyFrom' => ['sometimes'],
+            'filter.currencyFrom.*' => ['string', 'size:3'],
+            'filter.exchangeRate' => ['sometimes'],
+            'filter.exchangeRate.*' => ['numeric', 'min:0'],
+            'filter.retrievedAt' => ['sometimes'],
+            'filter.retrievedAt.*' => ['date_format:Y-m-d H:i:s'],
+
+            'filter.sort' => ['sometimes'],
+            'filter.sort.*' => [
+                'string',
+                function ($attribute, $value, $fail) {
+                    if (str_starts_with($value, '-')) {
+                        if (!in_array($value, ['-currencyTo', '-currencyFrom', '-exchangeRate', '-retrievedAt'])) {
+                            $fail('The '.$attribute.' must be one of: currencyTo, currencyFrom, exchangeRate, retrievedAt, optionally prefixed with - for descending order.');
+                        }
+                    } else {
+                        if (!in_array($value, ['currencyTo', 'currencyFrom', 'exchangeRate', 'retrievedAt'])) {
+                            $fail('The '.$attribute.' must be one of: currencyTo, currencyFrom, exchangeRate, retrievedAt, optionally prefixed with - for descending order.');
+                        }
+                    }
+                },
+            ],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'currency_to.string' => 'The currency_to field must consist of alphabet characters.',
-            'currency_to.size' => 'The currency_to field must contain 3 digits.',
-            'currency_from.string' => 'The currency_from field must consist of alphabet characters.',
-            'currency_from.size' => 'The currency_from field must contain 3 digits.',
-            'rate.numeric' => 'The rate field must be of a numeric value.',
-            'rate.min' => 'The rate field value must be minimum 0.',
-            'retrieved_at.date_format' => 'The retrieved at field must match the format Y-m-d H:i:s.'
+            'filter.currencyTo.*.string' => 'Each value in the filter.currencyTo field must consist of alphabet characters.',
+            'filter.currencyTo.*.size' => 'Each value in the filter.currencyTo field must contain 3 characters.',
+            'filter.currencyFrom.*.string' => 'Each value in the filter.currencyFrom field must consist of alphabet characters.',
+            'filter.currencyFrom.*.size' => 'Each value in the filter.currencyFrom field must contain 3 characters.',
+            'filter.exchangeRate.*.numeric' => 'Each value in the filter.exchangeRate field must be of a numeric value.',
+            'filter.exchangeRate.*.min' => 'Each value in the filter.exchangeRate field must be minimum 0.',
+            'filter.retrievedAt.*.date_format' => 'Each value in the filter.retrievedAt field must match the format Y-m-d H:i:s.',
+            'filter.sort.*.string' => 'Each value in the filter.sort field must be a string.',
+            'filter.sort.*.in' => 'Each value in the filter.sort field must be one of: currencyTo, currencyFrom, exchangeRate, retrievedAt, optionally prefixed with - for descending order.'
         ];
     }
 }
