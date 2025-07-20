@@ -3,9 +3,12 @@
 namespace Tests\Feature\V1;
 
 use App\DTOs\V1\ExchangeRateDTO;
+use App\Http\Resources\V1\ExchangeRateCollection;
 use App\Models\ExchangeRate;
 use App\Services\V1\ExchangeRateService;
+use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -24,6 +27,7 @@ class ExchangeRateServiceTest extends TestCase
 
     /**
      * Test that the service can successfully fetch exchange rates from ECB
+     * @throws ConnectionException
      */
     public function test_service_can_fetch_exchange_rates_from_ecb(): void
     {
@@ -46,6 +50,7 @@ class ExchangeRateServiceTest extends TestCase
 
     /**
      * Test that the service can parse XML response correctly
+     * @throws Exception
      */
     public function test_service_can_parse_xml_response_correctly(): void
     {
@@ -110,9 +115,10 @@ class ExchangeRateServiceTest extends TestCase
 
 
     /**
-     * Test the complete fetch and store process
+     * Test the complete fetch and store process for command line
+     * @throws ConnectionException
      */
-    public function test_service_can_fetch_and_store_rates(): void
+    public function test_service_can_fetch_and_store_rates_array(): void
     {
         //mocks the HTTP call to the ECB API
         Http::fake([
@@ -123,10 +129,45 @@ class ExchangeRateServiceTest extends TestCase
         ]);
 
         //executes the service method
-        $storedRates = $this->service->fetchAndStoreRates();
+        $storedRates = $this->service->fetchAndStoreRatesArray();
 
         //asserts the rates were stored correctly
         $this->assertCount(2, $storedRates);
+        $this->assertDatabaseHas('exchange_rates', [
+            'currency_from' => 'EUR',
+            'currency_to' => 'USD',
+            'rate' => 1.0876
+        ]);
+        $this->assertDatabaseHas('exchange_rates', [
+            'currency_from' => 'EUR',
+            'currency_to' => 'JPY',
+            'rate' => 157.83
+        ]);
+
+        //asserts that we have exactly 2 records in the database
+        $this->assertEquals(2, ExchangeRate::count());
+    }
+
+    /**
+     * Test the complete fetch and store process with pagination
+     */
+    public function test_service_can_fetch_and_store_rates_paginated(): void
+    {
+        //mocks the HTTP call to the ECB API
+        Http::fake([
+            'www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml' => Http::response(
+                $this->getSampleXmlResponse(),
+                200
+            )
+        ]);
+
+        //executes the service method
+        $result = $this->service->fetchAndStoreRates();
+
+        //asserts the result is a collection
+        $this->assertInstanceOf(ExchangeRateCollection::class, $result);
+
+        //asserts the rates were stored correctly
         $this->assertDatabaseHas('exchange_rates', [
             'currency_from' => 'EUR',
             'currency_to' => 'USD',
@@ -156,7 +197,7 @@ class ExchangeRateServiceTest extends TestCase
         ]);
 
         //expects an exception when calling the service
-        $this->expectException(\Exception::class);
+        $this->expectException(Exception::class);
         $this->expectExceptionMessage('Failed to fetch exchange rates from ECB: 500');
 
         //executes the service method
@@ -173,11 +214,11 @@ class ExchangeRateServiceTest extends TestCase
     {
         //mocks the HTTP call to throw a connection exception
         Http::fake(function () {
-            throw new \Illuminate\Http\Client\ConnectionException('Could not connect to host');
+            throw new ConnectionException('Could not connect to host');
         });
 
         //expects an exception when calling the service
-        $this->expectException(\Illuminate\Http\Client\ConnectionException::class);
+        $this->expectException(ConnectionException::class);
         $this->expectExceptionMessage('Could not connect to host');
 
         //executes the service method

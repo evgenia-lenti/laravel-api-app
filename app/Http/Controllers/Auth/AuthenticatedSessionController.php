@@ -23,6 +23,32 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
+     * Handle an API authentication request.
+     */
+    public function apiLogin(Request $request)
+    {
+        $request->validate([
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
+        ]);
+
+        if (!Auth::attempt($request->only('email', 'password'))) {
+            return response()->json([
+                'message' => 'Invalid login credentials'
+            ], 401);
+        }
+
+        $user = $request->user();
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Login successful',
+            'user' => $user,
+            'token' => $token
+        ]);
+    }
+
+    /**
      * Destroy an authenticated session.
      */
     public function destroy(Request $request): Response
@@ -34,5 +60,29 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
 
         return response()->noContent();
+    }
+
+    /**
+     * Revoke the token that was used to authenticate the current request.
+     *
+     * @group Authentication
+     * @authenticated
+     *
+     * @response {
+     *   "message": "Logged out successfully"
+     * }
+     */
+    public function apiLogout(Request $request)
+    {
+        // Revoke the token that was used to authenticate the current request
+        // Check if we're using a real token (not a TransientToken used in tests)
+        $token = $request->user()->currentAccessToken();
+        if (method_exists($token, 'delete')) {
+            $token->delete();
+        }
+
+        return response()->json([
+            'message' => 'Logged out successfully'
+        ]);
     }
 }

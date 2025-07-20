@@ -7,6 +7,7 @@ use App\Http\Filters\V1\ExchangeRateFilter;
 use App\Http\Resources\V1\ExchangeRateCollection;
 use App\Http\Resources\V1\ExchangeRateResource;
 use App\Models\ExchangeRate;
+use App\Services\V1\ExchangeRateService;
 use Throwable;
 
 class ExchangeRateController extends Controller
@@ -15,6 +16,8 @@ class ExchangeRateController extends Controller
      * Get a list of exchange rates
      *
      * Returns a paginated list of exchange rates from the European Central Bank.
+     * The exchange rates are fetched from the ECB API every time this endpoint is called,
+     * stored in the database, and then returned as a paginated response.
      * The results can be filtered and sorted using query parameters.
      *
      * > **Important:** All filter parameters must use the bracket syntax: `filter[paramName]=value`
@@ -83,11 +86,9 @@ class ExchangeRateController extends Controller
      *
      * @throws Throwable
      */
-    public function index(ExchangeRateFilter $filters)
+    public function index(ExchangeRateFilter $filters, ExchangeRateService $service): ExchangeRateCollection
     {
-        $exchangeRates = ExchangeRate::filter($filters)->paginate();
-
-        return new ExchangeRateCollection($exchangeRates);
+        return $service->fetchAndStoreRates($filters);
     }
 
     /**

@@ -56,36 +56,6 @@ This project is a Laravel-based application that fetches and stores exchange rat
    php artisan migrate
    ```
 
-6. **Seed the database**
-
-   Run the database seeders to create a test user with an API token:
-
-   ```bash
-   php artisan db:seed
-   ```
-
-   This command will:
-   - Create a test user with email `some@email.com` and password `password`
-   - Generate an API token for this user
-   - Display the token in the console output
-
-   Make note of the token displayed in the console, as you'll need it to authenticate API requests.
-   
-   Example token output:
-   ```
-   Test user token: 1|laravel_sanctum_hashed_token_example
-   ```
-
-7. **Fetch exchange rates**
-
-   To fetch exchange rates from the European Central Bank, run:
-
-   ```bash
-   php artisan exchange-rates:fetch
-   ```
-
-   This command will fetch the latest exchange rates and store them in your database. You can run this command manually whenever you need to fetch and store the exchange rates.
-
 
 ## Project Structure
 
@@ -99,7 +69,11 @@ This project is a Laravel-based application that fetches and stores exchange rat
 ### API Endpoints
 
 - `GET /api/v1/exchange-rates`: List all exchange rates (requires authentication)
+  - This endpoint fetches the latest exchange rates from the ECB API every time it's called
+  - The rates are stored in the database and then returned as a paginated response
+  - You can filter and sort the results using query parameters (see below)
 - `GET /api/v1/exchange-rates/{exchangeRate}`: Get a specific exchange rate (requires authentication)
+- `POST /api/v1/logout`: Logout and revoke the current token (requires authentication)
 
 ### Filtering and Sorting
 
@@ -140,26 +114,89 @@ This example:
 
 ### Authentication
 
-The API endpoints are protected with Laravel Sanctum. To access them:
+The API endpoints are protected with Laravel Sanctum. All authentication tokens expire after 3 days, after which you'll need to obtain a new token.
 
-1. Run the database seeder to generate a test user and token as described in the installation steps.
+To access the protected endpoints:
 
-2. Include the token in your API requests using the Authorization header:
+#### Register a new user (Recommended for Postman)
+
+1. Send a POST request to the `/api/v1/register` endpoint with the following JSON body:
+   ```json
+   {
+       "name": "Your Name",
+       "email": "your@email.com",
+       "password": "your_password",
+       "password_confirmation": "your_password"
+   }
+   ```
+
+2. The response will include a token that you can immediately use for authentication:
+   ```json
+   {
+       "message": "User registered successfully",
+       "user": {
+           "name": "Your Name",
+           "email": "your@email.com",
+           "id": 1
+       },
+       "token": "1|your_token_here"
+   }
+   ```
+
+3. Include this token in your API requests using the Authorization header:
    ```
    Authorization: Bearer YOUR_TOKEN_HERE
    ```
 
-3. If you need to generate a new token, you can use Laravel Tinker:
-   ```bash
-   php artisan tinker
+> **Note:** After registration, you are automatically logged in and can use the provided token for all authenticated requests. There is no need to perform a separate login unless you've logged out or your token has expired.
+
+#### Login with existing credentials
+
+This step is only necessary if you've previously logged out or your token has expired.
+
+1. Send a POST request to the `/api/v1/login` endpoint with the following JSON body:
+   ```json
+   {
+       "email": "your@email.com",
+       "password": "your_password"
+   }
    ```
-   
-   Then execute:
-   ```php
-   $user = \App\Models\User::where('email', 'some@email.com')->first();
-   $user->tokens()->delete(); // Delete existing tokens
-   $user->createToken('NewToken')->plainTextToken;
+
+2. The response will include a new token:
+   ```json
+   {
+       "message": "Login successful",
+       "user": {
+           "name": "Your Name",
+           "email": "your@email.com",
+           "id": 1
+       },
+       "token": "1|your_token_here"
+   }
    ```
+
+3. Include this token in your API requests using the Authorization header:
+   ```
+   Authorization: Bearer YOUR_TOKEN_HERE
+   ```
+
+#### Logging Out and Revoking Tokens
+
+To logout and revoke your current token:
+
+1. Send a POST request to the `/api/v1/logout` endpoint with an empty body
+2. Include your token in the Authorization header:
+   ```
+   Authorization: Bearer YOUR_TOKEN_HERE
+   ```
+3. The response will confirm successful logout:
+   ```json
+   {
+       "message": "Logged out successfully"
+   }
+   ```
+4. After logout, the token is revoked and can no longer be used for authentication
+
 
 ## Fetching Exchange Rates
 
@@ -213,9 +250,48 @@ php artisan test
 ```
 
 The project includes several test classes:
-- `ExchangeRateApiTest`: Tests the API endpoints
+- `ExchangeRateApiTest`: Tests the exchange rate API endpoints
+- `AuthenticationTest`: Tests the authentication API endpoints
 - `FetchExchangeRatesCommandTest`: Tests the Artisan command
 - `ExchangeRateServiceTest`: Tests the service layer
+
+### Test Authentication
+
+The project uses a centralized approach for authentication in tests through the `WithAuthentication` trait located in `tests/Traits/WithAuthentication.php`. This trait:
+
+- Provides a common way to create and authenticate test users
+- Reduces code duplication across test classes
+- Ensures consistent authentication behavior
+
+To use authentication in your tests:
+
+```php
+use Tests\Traits\WithAuthentication;
+
+class YourTest extends TestCase
+{
+    use RefreshDatabase, WithAuthentication;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->setUpUser();
+    }
+
+    public function test_example(): void
+    {
+        // Authenticate the user when needed
+        $this->authenticateWithSanctum();
+        
+        // Make authenticated requests
+        $response = $this->get('/api/v1/protected-endpoint');
+        
+        // Assert response
+        $response->assertStatus(200);
+    }
+}
+```
+
 
 ## Troubleshooting
 

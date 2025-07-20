@@ -7,15 +7,15 @@ use Illuminate\Database\Eloquent\Builder;
 
 abstract class QueryBuilder
 {
-    protected $builder;
-    protected $request;
+    protected Builder $builder;
+    protected ExchangeRateFilterRequest $request;
 
     public function __construct(ExchangeRateFilterRequest $request)
     {
         $this->request = $request;
     }
 
-    protected function filter($array)
+    protected function filter($array): Builder
     {
         foreach ($array as $key => $value) {
             if (method_exists($this, $key)) {

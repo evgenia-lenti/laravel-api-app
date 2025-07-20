@@ -4,6 +4,7 @@ namespace Tests\Feature\V1;
 
 use App\Models\ExchangeRate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -77,7 +78,7 @@ class FetchExchangeRatesCommandTest extends TestCase
     {
         //mocks the HTTP call to throw a connection exception
         Http::fake(function () {
-            throw new \Illuminate\Http\Client\ConnectionException('Could not connect to host');
+            throw new ConnectionException('Could not connect to host');
         });
 
         //executes the command and expect it to fail

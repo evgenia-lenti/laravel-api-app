@@ -14,23 +14,34 @@ class AuthenticationTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $response = $this->post('/login', [
+        $response = $this->postJson('/api/v1/login', [
             'email' => $user->email,
             'password' => 'password',
         ]);
 
-        $this->assertAuthenticated();
-        $response->assertNoContent();
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'message',
+                'user',
+                'token'
+            ]);
+
+        $this->assertNotEmpty($response->json('token'));
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
     {
         $user = User::factory()->create();
 
-        $this->post('/login', [
+        $response = $this->postJson('/api/v1/login', [
             'email' => $user->email,
             'password' => 'wrong-password',
         ]);
+
+        $response->assertStatus(401)
+            ->assertJson([
+                'message' => 'Invalid login credentials'
+            ]);
 
         $this->assertGuest();
     }
@@ -39,9 +50,21 @@ class AuthenticationTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)->post('/logout');
+        // First login to get a token
+        $loginResponse = $this->postJson('/api/v1/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
 
-        $this->assertGuest();
-        $response->assertNoContent();
+        $token = $loginResponse->json('token');
+
+        // Then use the token to logout
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/v1/logout');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Logged out successfully'
+            ]);
     }
 }

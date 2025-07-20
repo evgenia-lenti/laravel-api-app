@@ -2,27 +2,29 @@
 
 namespace App\Http\Filters\V1;
 
+use Illuminate\Database\Eloquent\Builder;
+
 class ExchangeRateFilter extends QueryBuilder
 {
-    public function currencyFrom($value)
+    public function currencyFrom($value): Builder
     {
         $values = is_array($value) ? $value : explode(',', $value);
         return $this->builder->whereIn('currency_from', $values);
     }
 
-    public function currencyTo($value)
+    public function currencyTo($value): Builder
     {
         $values = is_array($value) ? $value : explode(',', $value);
         return $this->builder->whereIn('currency_to', $values);
     }
 
-    public function exchangeRate($value)
+    public function exchangeRate($value): Builder
     {
         $values = is_array($value) ? $value : explode(',', $value);
         return $this->builder->whereIn('rate', $values);
     }
 
-    public function retrievedAt($value)
+    public function retrievedAt($value): Builder
     {
         $values = is_array($value) ? $value : explode(',', $value);
 
@@ -33,7 +35,7 @@ class ExchangeRateFilter extends QueryBuilder
         });
     }
 
-    public function sort($value)
+    public function sort($value): Builder
     {
         $columnMap = [
             'currencyTo' => 'currency_to',

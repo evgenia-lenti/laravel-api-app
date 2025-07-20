@@ -31,12 +31,12 @@ class FetchExchangeRatesCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         $this->info('Fetching exchange rates from ECB...');
 
         try {
-            $rates = $this->exchangeRateService->fetchAndStoreRates();
+            $rates = $this->exchangeRateService->fetchAndStoreRatesArray();
 
             $this->info('Successfully fetched and stored ' . count($rates) . ' exchange rates.');
 

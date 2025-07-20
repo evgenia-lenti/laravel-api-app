@@ -13,35 +13,27 @@ class ExchangeRatePolicy
 
     public function viewAny(User $user): Response
     {
-        return $user->email === 'some@email.com'
+        //to be implemented along with a role system
+        /*return $user->email === 'some@email.com'
             ? Response::allow()
-            : Response::deny('You do not have permission to view the exchange rates.');
+            : Response::deny('You do not have permission to view the exchange rates.');*/
+
+        return Response::allow();
     }
 
     public function view(User $user, ExchangeRate $exchangeRate): Response
     {
-        return $user->email === 'some@email.com'
+        //to be implemented along with a role system
+        /*return $user->email === 'some@email.com'
             ? Response::allow()
-            : Response::deny('You do not have permission to view this exchange rate.');
+            : Response::deny('You do not have permission to view this exchange rate.');*/
+
+        return Response::allow();
     }
 
-    public function create(User $user): bool
+    public function create(User $user): Response
     {
-    }
-
-    public function update(User $user, ExchangeRate $exchangeRate): bool
-    {
-    }
-
-    public function delete(User $user, ExchangeRate $exchangeRate): bool
-    {
-    }
-
-    public function restore(User $user, ExchangeRate $exchangeRate): bool
-    {
-    }
-
-    public function forceDelete(User $user, ExchangeRate $exchangeRate): bool
-    {
+        //to be implemented
+        return Response::allow();
     }
 }
